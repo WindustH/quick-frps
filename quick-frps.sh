@@ -41,23 +41,6 @@ check_root() {
     fi
 }
 
-# Function to get system architecture
-get_arch() {
-    ARCH=$(uname -m)
-    case $ARCH in
-        x86_64)
-            FRP_ARCH="amd64"
-            ;;
-        aarch64)
-            FRP_ARCH="arm64"
-            ;;
-        *)
-            echo -e "${RED}错误：不支持的系统架构: $ARCH ${NC}"
-            exit 1
-            ;;
-    esac
-    echo -e "${GREEN}检测到系统架构: ${FRP_ARCH}${NC}"
-}
 # Function to download and install frp
 install_frp() {
     echo -e "${BLUE}开始下载并安装 frp...${NC}"
@@ -199,9 +182,6 @@ main() {
         apt-get update
         apt-get install -y curl wget
     fi
-
-    get_arch
-    get_latest_version
 
     # Stop existing service if it exists
     if systemctl is-active --quiet frps; then
