@@ -29,6 +29,7 @@ NC='\033[0m' # No Color
 FRP_INSTALL_DIR="/usr/local/frp"
 FRP_CONFIG_FILE="/etc/frp/frps.toml"
 SYSTEMD_SERVICE_FILE="/etc/systemd/system/frps.service"
+FRP_FILENAME="frp_0.63.0_linux_amd64"
 
 # --- Functions ---
 
@@ -44,7 +45,6 @@ check_root() {
 # Function to download and install frp
 install_frp() {
     echo -e "${BLUE}开始下载并安装 frp...${NC}"
-    FRP_FILENAME="frp_0.63.0_linux_amd64"
 
     # Extract
     tar -zxvf "${FRP_FILENAME}.tar.gz" -C /tmp
@@ -78,32 +78,10 @@ configure_frps() {
         exit 1
     fi
 
-    read -p "是否需要启用 Web 仪表盘? (y/n, 默认 n): " ENABLE_DASHBOARD
-    if [[ "$ENABLE_DASHBOARD" == "y" || "$ENABLE_DASHBOARD" == "Y" ]]; then
-        read -p "请输入仪表盘端口 (默认为 7500): " DASHBOARD_PORT
-        DASHBOARD_PORT=${DASHBOARD_PORT:-7500}
-        read -p "请输入仪表盘登录用户名 (默认为 admin): " DASHBOARD_USER
-        DASHBOARD_USER=${DASHBOARD_USER:-admin}
-        read -p "请输入仪表盘登录密码 (建议设置一个复杂的密码): " DASHBOARD_PWD
-        if [ -z "${DASHBOARD_PWD}" ]; then
-            echo -e "${RED}错误：仪表盘密码不能为空！${NC}"
-            exit 1
-        fi
-        DASHBOARD_CONFIG="
-[dashboard]
-port = ${DASHBOARD_PORT}
-user = \"${DASHBOARD_USER}\"
-password = \"${DASHBOARD_PWD}\"
-"
-    else
-        DASHBOARD_CONFIG=""
-    fi
-
     # Create config file
     sudo bash -c "cat > ${FRP_CONFIG_FILE}" <<EOF
 bindPort = ${BIND_PORT}
 auth.token = "${AUTH_TOKEN}"
-${DASHBOARD_CONFIG}
 EOF
 
     echo -e "${GREEN}配置文件创建成功！路径: ${FRP_CONFIG_FILE}${NC}"
@@ -160,11 +138,6 @@ configure_firewall() {
     echo -e "正在开放端口: ${BIND_PORT}"
     sudo ufw allow ${BIND_PORT}/tcp
 
-    if [[ "$ENABLE_DASHBOARD" == "y" || "$ENABLE_DASHBOARD" == "Y" ]]; then
-        echo -e "正在开放仪表盘端口: ${DASHBOARD_PORT}"
-        sudo ufw allow ${DASHBOARD_PORT}/tcp
-    fi
-
     sudo ufw reload
     echo -e "${GREEN}防火墙配置完成！${NC}"
 }
@@ -205,11 +178,6 @@ main() {
     echo -e "服务器地址: ${YELLOW}$(curl -s ip.sb)${NC}"
     echo -e "绑定端口 (serverPort): ${YELLOW}${BIND_PORT}${NC}"
     echo -e "认证令牌 (token): ${YELLOW}${AUTH_TOKEN}${NC}"
-    if [[ "$ENABLE_DASHBOARD" == "y" || "$ENABLE_DASHBOARD" == "Y" ]]; then
-        echo -e "仪表盘地址: ${YELLOW}http://$(curl -s ip.sb):${DASHBOARD_PORT}${NC}"
-        echo -e "仪表盘用户: ${YELLOW}${DASHBOARD_USER}${NC}"
-        echo -e "仪表盘密码: ${YELLOW}${DASHBOARD_PWD}${NC}"
-    fi
     echo -e "------------------------------------"
     echo -e "请确保在您的云服务商安全组中也开放了相应端口。"
 }
